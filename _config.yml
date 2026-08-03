@@ -1,0 +1,24 @@
+title: Event Gallery
+description: A simple, folder-powered home for event photographs.
+url: "https://rajeshphy.github.io"
+baseurl: "/Event"
+
+markdown: kramdown
+plugins:
+  - jekyll-feed
+
+include:
+  - IMAGES
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - README.md
+  - vendor
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+

@@ -1,0 +1,206 @@
+---
+layout: default
+---
+<style>
+  .event {
+    overflow: hidden;
+    margin-bottom: 1rem;
+    background: rgba(22, 27, 34, 0.9);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+  .event[open] { border-color: #484f58; }
+  .event > summary, .album > summary {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 4rem;
+    padding: 1rem 3.5rem 1rem 1.15rem;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+  }
+  .event > summary::-webkit-details-marker, .album > summary::-webkit-details-marker { display: none; }
+  .event > summary::after, .album > summary::after {
+    content: "+";
+    position: absolute;
+    right: 1.2rem;
+    color: var(--muted);
+    font-size: 1.4rem;
+    font-weight: 400;
+    transition: transform 160ms ease, color 160ms ease;
+  }
+  .event[open] > summary::after, .album[open] > summary::after {
+    color: var(--accent);
+    transform: rotate(45deg);
+  }
+  .event > summary { font-size: 1.1rem; font-weight: 780; letter-spacing: -0.015em; }
+  .event[open] > summary { background: linear-gradient(90deg, var(--accent-soft), transparent 70%); border-bottom: 1px solid var(--line); }
+  .event__body { display: grid; gap: 0.75rem; padding: 0.8rem; }
+
+  .album { overflow: hidden; background: var(--surface-raised); border: 1px solid var(--line); border-radius: 13px; }
+  .album > summary { min-height: 3.2rem; padding-block: 0.7rem; font-size: 0.92rem; font-weight: 680; }
+  .album[open] > summary { border-bottom: 1px solid var(--line); }
+  .image-count { margin-left: auto; color: var(--muted); font-size: 0.72rem; font-weight: 600; }
+
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+    gap: 0.65rem;
+    margin: 0;
+    padding: 0.65rem;
+    list-style: none;
+  }
+  .photo-button {
+    position: relative;
+    display: block;
+    width: 100%;
+    padding: 0;
+    overflow: hidden;
+    color: inherit;
+    background: #090c10;
+    border: 0;
+    border-radius: 10px;
+    cursor: zoom-in;
+    aspect-ratio: 4 / 3;
+  }
+  .photo-button img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    transition: transform 240ms ease, opacity 180ms ease;
+  }
+  .photo-name {
+    position: absolute;
+    inset: auto 0 0;
+    padding: 2.3rem 0.75rem 0.65rem;
+    overflow: hidden;
+    color: white;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.82));
+    font-size: 0.75rem;
+    font-weight: 650;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .empty { margin: 0; padding: 1rem; color: var(--muted); font-size: 0.88rem; }
+  .no-images { padding: 1.2rem; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+
+  .lightbox {
+    width: min(94vw, 80rem);
+    max-width: none;
+    padding: 0;
+    overflow: visible;
+    color: white;
+    background: transparent;
+    border: 0;
+  }
+  .lightbox::backdrop { background: rgba(0, 0, 0, 0.88); backdrop-filter: blur(8px); }
+  .lightbox img { display: block; width: 100%; max-height: 82vh; object-fit: contain; border-radius: 10px; }
+  .lightbox__caption { margin: 0.7rem 3rem 0 0; color: #d1d5db; font-size: 0.86rem; overflow-wrap: anywhere; }
+  .lightbox__close {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    color: white;
+    background: rgba(22, 27, 34, 0.88);
+    border: 1px solid #6e7681;
+    border-radius: 999px;
+    font-size: 1.5rem;
+    cursor: pointer;
+  }
+  @media (hover: hover) {
+    .event:not([open]):hover, .album:not([open]):hover { border-color: #6e7681; }
+    .photo-button:hover img { transform: scale(1.035); opacity: 0.9; }
+  }
+</style>
+
+{% assign image_files = site.static_files | where_exp: "file", "file.path contains '/IMAGES/'" %}
+{% assign events = image_files | group_by_exp: "file", "file.path | split: '/' | slice: 2, 1 | first" | sort: "name" %}
+{% assign allowed_extensions = ".jpg,.jpeg,.png,.gif,.webp,.avif,.svg" | split: "," %}
+
+<section aria-label="Event albums">
+  {% if events.size > 0 %}
+    {% for event in events %}
+    <details class="event"{% if events.size == 1 %} open{% endif %}>
+      <summary>{{ event.name | replace: '_', ' ' | escape }}</summary>
+      <div class="event__body">
+        {% assign albums = event.items | group_by_exp: "file", "file.path | split: '/' | slice: 3, 1 | first" | sort: "name" %}
+        {% for album in albums %}
+          {% capture expected_directory %}/IMAGES/{{ event.name }}/{{ album.name }}/{% endcapture %}
+          {% assign image_count = 0 %}
+          {% for file in album.items %}
+            {% assign file_directory = file.path | remove: file.name %}
+            {% assign extension = file.extname | downcase %}
+            {% if file_directory == expected_directory and allowed_extensions contains extension %}
+              {% assign image_count = image_count | plus: 1 %}
+            {% endif %}
+          {% endfor %}
+
+          <details class="album">
+            <summary>
+              {{ album.name | replace: '_', ' ' | escape }}
+              <span class="image-count">{{ image_count }} {% if image_count == 1 %}image{% else %}images{% endif %}</span>
+            </summary>
+            {% if image_count > 0 %}
+            <ul class="gallery">
+              {% assign files = album.items | sort: "name" %}
+              {% for file in files %}
+                {% assign file_directory = file.path | remove: file.name %}
+                {% assign extension = file.extname | downcase %}
+                {% if file_directory == expected_directory and allowed_extensions contains extension %}
+                <li>
+                  <button class="photo-button" type="button" data-src="{{ file.path | relative_url | uri_escape }}" data-name="{{ file.name | escape }}" aria-label="View {{ file.name | escape }} larger">
+                    <img src="{{ file.path | relative_url | uri_escape }}" alt="{{ file.name | remove: file.extname | replace: '_', ' ' | escape }}" loading="lazy" decoding="async">
+                    <span class="photo-name">{{ file.name | escape }}</span>
+                  </button>
+                </li>
+                {% endif %}
+              {% endfor %}
+            </ul>
+            {% else %}
+            <p class="empty">No supported images in this album yet.</p>
+            {% endif %}
+          </details>
+        {% endfor %}
+      </div>
+    </details>
+    {% endfor %}
+  {% else %}
+    <p class="no-images">No images yet. Add photographs under <code>IMAGES/Event/Album/</code>.</p>
+  {% endif %}
+</section>
+
+<dialog class="lightbox" id="lightbox" aria-label="Image viewer">
+  <button class="lightbox__close" type="button" aria-label="Close image viewer">&times;</button>
+  <img id="lightbox-image" alt="">
+  <p class="lightbox__caption" id="lightbox-caption"></p>
+</dialog>
+
+<script>
+  const lightbox = document.querySelector('#lightbox');
+  const lightboxImage = document.querySelector('#lightbox-image');
+  const lightboxCaption = document.querySelector('#lightbox-caption');
+
+  document.querySelectorAll('.photo-button').forEach((button) => {
+    button.addEventListener('click', () => {
+      lightboxImage.src = button.dataset.src;
+      lightboxImage.alt = button.querySelector('img').alt;
+      lightboxCaption.textContent = button.dataset.name;
+      lightbox.showModal();
+    });
+  });
+
+  lightbox.querySelector('.lightbox__close').addEventListener('click', () => lightbox.close());
+  lightbox.addEventListener('click', (event) => {
+    if (event.target === lightbox) lightbox.close();
+  });
+  lightbox.addEventListener('close', () => {
+    lightboxImage.removeAttribute('src');
+    lightboxImage.alt = '';
+  });
+</script>
