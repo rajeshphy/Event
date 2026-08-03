@@ -126,7 +126,7 @@ layout: default
 <section aria-label="Event albums">
   {% if events.size > 0 %}
     {% for event in events %}
-    <details class="event"{% if events.size == 1 %} open{% endif %}>
+    <details class="event">
       <summary>{{ event.name | replace: '_', ' ' | escape }}</summary>
       <div class="event__body">
         {% assign albums = event.items | group_by_exp: "file", "file.path | split: '/' | slice: 3, 1 | first" | sort: "name" %}
