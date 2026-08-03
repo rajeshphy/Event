@@ -1,7 +1,10 @@
-_site/
-.jekyll-cache/
-.jekyll-metadata
-.bundle/
-vendor/
+.gitignore
 .DS_Store
-
+*.bbl
+_site
+*.aux
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.synctex.gz
